@@ -680,6 +680,13 @@ def main():
 
     # 硬性失败: Worker 完全不可达 (没有任何一个请求拿到正常响应)
     if uniq and not success and len(worker_errors) == len(uniq):
+        # 诊断: Worker 全失败时, 打印去重后的错误样本, 便于定位 (403/404/连接错误等)
+        if worker_errors:
+            from collections import Counter
+            err_samples = Counter(r.get("error") for r in worker_errors)
+            log("CLOUDFLARE WORKER", "Worker 错误样本 (去重):")
+            for err, cnt in err_samples.most_common(5):
+                log("CLOUDFLARE WORKER", f"  [{cnt}x] {err}")
         die("Worker 全部请求异常, 检测服务不可用 — 本次运行判定失败 (不生成空结果)")
 
     # 4) 结果 + 网页
